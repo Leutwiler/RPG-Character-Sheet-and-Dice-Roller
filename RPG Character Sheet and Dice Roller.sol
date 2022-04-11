@@ -56,9 +56,9 @@ contract RPG {
         character[_characterId].level--;
     }
 
-    function rollDice(uint8 _numberOfDices, uint8 _numberOfFaces, uint8 _numberToWin, uint _characterId) public onlyOwner(_characterId) returns(uint, string memory message) {
-        uint random = uint(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender))) % (_numberOfDices * _numberOfFaces - _numberOfDices + 1);
-        uint result = random + _numberOfDices;
+    function rollDice(uint8 _numberOfDice, uint8 _numberOfFaces, uint8 _numberToWin, uint _characterId) public onlyOwner(_characterId) returns(uint, string memory message) {
+        uint random = uint(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender))) % (_numberOfDice * _numberOfFaces - _numberOfDice + 1);
+        uint result = random + _numberOfDice;
         if (result >= _numberToWin) {
             message = "You won";
             character[_characterId].winCount++; 
@@ -68,5 +68,4 @@ contract RPG {
         }
         return (result, message);
     }    
-
 }
