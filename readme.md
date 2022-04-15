@@ -6,6 +6,8 @@ Your character will also be attatched to a win and loss count, which is based on
 
 The main goal of this project is to provide a tool in the blockchain for casual RPG players to store their characters and also roll dice. So it's a complementary application for your RPG match and not a full game replacement.
 
+I'm using Foundry for testing my contract and every test passes.
+
 This is my first Solidity project :)
 
 ## Base of our code 👨‍💻
@@ -14,14 +16,15 @@ The following code represents the base of all the project. We're creating an enu
 
 We're also defining the struct of the character, which has a name, class, race, level, win and loss count and the address of the owner. An array was created in order to players be able to create loads and loads of characters.
 
+In the second version of the code, I decided to place the enum and the struct inside an interface called Details, because it becomes easier for me to test my contract using Foundry afterwards.
+
 In the end of the base code, a modifier was created to attatch the created character to its respective owner.
 
 ```
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-contract RPG {
-
+interface Details {
     enum Classes {
         Warrior,
         Assassin,
@@ -55,13 +58,16 @@ contract RPG {
         uint16 lossCount;
         address owner;
     }
+}
+
+contract RPG is Details {
 
     Character[] public character;
 
     modifier onlyOwner(uint _characterId) {
         require(msg.sender == character[_characterId].owner, "Not owner");
         _;
-    }
+    } 
 ```
 
 ## Functions for our character 🏃‍♂️
@@ -70,6 +76,7 @@ The functions of the code to change our character are:
 * createCharacter: to create a new character using the name, class and race provided by the player
 * levelUp: you can level up your character anytime you want as this code is just a complementary tool for your match that will work as your character sheet
 * levelDown: you can also level down in case of a levelUp miss click or even if your character gets a level debuff during the game
+* getLevel: it returns the level of your character
 
 ```
     function createCharacter(string memory _name, Classes _class, Races _race) public {
@@ -82,6 +89,10 @@ The functions of the code to change our character are:
 
     function levelDown(uint _characterId) public onlyOwner(_characterId) {
         character[_characterId].level--;
+    }
+
+    function getLevel(uint _characterId) public view returns(uint8) {
+        return character[_characterId].level;
     }
 ```
 
@@ -109,8 +120,53 @@ The function will return your dice number and a message saying if you won or not
             character[_characterId].lossCount++;
         }
         return (result, message);
+    } 
+```
+
+## Tests 🧪
+
+In the second version of my published code, I decided to implement some tests using Foundry.
+
+First, we're going to check if we're able to create characters, level up and level down them. In order to do it, a testLevel function was created considering the createCharacter function of the original contract, which creates two characters, Andrey and Gomes, that are going to be used for the level tests. Afterward, we want  to be sure that the start level is 1 and it increases as we click in the levelUp function and it decreases as we click in the levelDown function.
+
+Our second test will secure that the rollDice function won't return a number greater than 255, as we're using an uint8, and will also assert that the result is greater than or equal to the _numberOfDice and if the result is lesser than or equal to _numberOfDice * _numberOfFaces, which are the floor and ceiling value.
+
+```
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.12;
+
+import "lib/ds-test/src/test.sol";
+import "src/RPGCharacter.sol";
+import "testdata/cheats/Cheats.sol";
+
+contract RPGTest is DSTest, Details {
+    RPG public rpg;
+    Cheats public cheats = Cheats(HEVM_ADDRESS);
+
+    function setUp() public {
+        rpg = new RPG();
     }
-} 
+
+function testLevel(uint _characterId) public {
+        cheats.assume(_characterId <= 1);
+        rpg.createCharacter("Andrey", Classes.Archer, Races.Dwarf);
+        rpg.createCharacter("Gomes", Classes.Bard, Races.Human);
+        assertEq(rpg.getLevel(_characterId), 1);
+        rpg.levelUp(_characterId);
+        assertEq(rpg.getLevel(_characterId), 2);
+        rpg.levelDown(_characterId);
+        assertEq(rpg.getLevel(_characterId), 1);
+    }
+
+    function testRollDice(uint8 _numberOfDice, uint8 _numberOfFaces) public {
+        cheats.assume(_numberOfFaces >= 1 && _numberOfDice >= 1 && uint(_numberOfDice) * uint(_numberOfFaces) <= 255);
+        require(_numberOfFaces >= 1 && _numberOfDice >= 1 && uint(_numberOfDice) * uint(_numberOfFaces) <= 255);
+        uint random = uint(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender))) % (_numberOfDice * _numberOfFaces - _numberOfDice + 1);
+        uint result = random + _numberOfDice;
+        assertGe(result,_numberOfDice);
+        assertLe(result,_numberOfDice*_numberOfFaces);
+    }
+}
 ```
 
 ## Thanks 😄
