@@ -58,7 +58,7 @@ contract RPG is Details {
         character[_characterId].level--;
     }
 
-    function getLevel(uint _characterId) public view returns(uint) {
+    function getLevel(uint _characterId) public view returns(uint8) {
         return character[_characterId].level;
     }
 
