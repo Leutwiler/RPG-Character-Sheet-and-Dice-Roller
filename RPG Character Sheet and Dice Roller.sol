@@ -1,8 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-contract RPG {
-
+interface Details {
     enum Classes {
         Warrior,
         Assassin,
@@ -36,6 +35,9 @@ contract RPG {
         uint16 lossCount;
         address owner;
     }
+}
+
+contract RPG is Details {
 
     Character[] public character;
 
@@ -54,6 +56,10 @@ contract RPG {
 
     function levelDown(uint _characterId) public onlyOwner(_characterId) {
         character[_characterId].level--;
+    }
+
+    function getLevel(uint _characterId) public view returns(uint) {
+        return character[_characterId].level;
     }
 
     function rollDice(uint8 _numberOfDice, uint8 _numberOfFaces, uint8 _numberToWin, uint _characterId) public onlyOwner(_characterId) returns(uint, string memory message) {
